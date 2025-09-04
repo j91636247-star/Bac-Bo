@@ -1,9 +1,300 @@
-<link rel="manifest" href="/Robo-JL/manifest.json">
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Backbone JL — Robô Bac Bo Automático</title>
+<style>
+:root{
+  --gold:#ffd700;
+  --glass-bg: rgba(18,18,20,0.7);
+}
+html,body{height:100%;margin:0;padding:0;background:#000;font-family:"Segoe UI",Tahoma,Geneva,Verdana,sans-serif;overflow:hidden}
+
+/* LOGIN */
+#login-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,0.95);z-index:1000;display:flex;align-items:center;justify-content:center;
+}
+#login-box{
+  background:linear-gradient(180deg,#111,#222);padding:24px;border-radius:16px;border:2px solid var(--gold);display:flex;flex-direction:column;align-items:center;width:240px;
+}
+#login-box input{
+  width:100%;margin:6px 0;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);background:rgba(0,0,0,0.45);color:#fff;font-size:14px;
+}
+#login-box button{
+  margin-top:12px;padding:12px 0;width:100%;border:none;border-radius:12px;background:linear-gradient(180deg,#00bfff,#0066cc);color:#fff;font-weight:700;cursor:pointer;transition:transform .1s ease;
+}
+#login-box button:active{transform:scale(.97);}
+
+/* IFRAME */
+#game-frame{position:absolute;inset:0;width:100%;height:100%;border:0;z-index:1}
+
+/* BOTÕES ROBÔ E PLANILHA */
+#robot-toggle, #manager-toggle{
+  position:fixed;width:48px;height:48px;border-radius:12px;
+  background:linear-gradient(180deg, rgba(24,24,26,0.95), rgba(10,10,12,0.75));
+  border:2px solid rgba(212,175,55,0.14);
+  box-shadow:0 0 6px #0ff, 0 0 12px #00f, inset 0 0 8px #0ff;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;
+  transition:transform .14s ease;backdrop-filter: blur(4px) saturate(120%);
+}
+#robot-toggle{bottom:60px;left:14px;z-index:40;}
+#manager-toggle{bottom:120px;left:14px;z-index:41;}
+#robot-toggle:active,#manager-toggle:active{transform:translateY(2px) scale(.99);}
+#robot-svg,#manager-svg{width:40px;height:40px;display:block;border-radius:12px}
+
+/* PAINÉIS */
+.calculator-panel, .manager-panel{
+  position:fixed;top:0;left:0;width:100%;max-width:320px;height:auto;background:var(--glass-bg);
+  border-radius:16px;border:2px solid rgba(212,175,55,0.14);color:#fff;z-index:39;
+  box-shadow:0 12px 40px rgba(0,0,0,0.7);padding:14px;box-sizing:border-box;
+  transform:translateY(-110%);opacity:0;pointer-events:none;
+  transition:transform .36s cubic-bezier(.2,.9,.2,1),opacity .28s ease;backdrop-filter: blur(8px) saturate(120%);
+}
+.calculator-panel.open, .manager-panel.open{transform:translateY(10px);opacity:1;pointer-events:auto}
+
+/* 🎲 DADO 3D */
+#dice-container{
+  display:flex;justify-content:center;margin-bottom:12px;perspective: 800px;
+}
+.dice3d {position: relative;width: 40px;height: 40px;transform-style: preserve-3d;animation: spin3d 4s infinite linear;}
+.face {position: absolute;width: 40px;height: 40px;border-radius: 6px;font-size: 18px;font-weight: bold;color: #fff;display:flex;align-items:center;justify-content:center;animation: colorShift 6s infinite alternate ease-in-out;}
+.front  { transform: rotateY(0deg) translateZ(20px); }
+.back   { transform: rotateY(180deg) translateZ(20px); }
+.right  { transform: rotateY(90deg) translateZ(20px); }
+.left   { transform: rotateY(-90deg) translateZ(20px); }
+.top    { transform: rotateX(90deg) translateZ(20px); }
+.bottom { transform: rotateX(-90deg) translateZ(20px); }
+@keyframes spin3d { 0%{transform: rotateX(0) rotateY(0);} 100%{transform: rotateX(360deg) rotateY(360deg);} }
+@keyframes colorShift { 0%{background:#0066cc;} 33%{background:#cc0000;} 66%{background:#ffd700;} 100%{background:#0066cc;} }
+
+/* HISTÓRICO */
+.history{display:flex;flex-wrap:wrap;gap:6px;padding:8px;border-radius:10px;border:1px solid rgba(255,255,255,0.03);background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.06));min-height:44px;align-items:center;margin-bottom:8px}
+.mini-ball{width:26px;height:26px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;border:1px solid rgba(255,255,255,0.04)}
+
+/* BOTÕES MANUAIS EM BOLINHA */
+.grid-buttons{display:flex;gap:12px;justify-content:center;margin-top:8px}
+.btn-circle{width:52px;height:52px;border-radius:50%;border:none;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;box-shadow:0 4px 12px rgba(0,0,0,0.5);}
+.btn-azul{background:linear-gradient(180deg,#00bfff,#0044aa);}
+.btn-vermelho{background:linear-gradient(180deg,#ff4b4b,#7a0000);}
+.btn-empate{background:linear-gradient(180deg,#ffd700,#b8860b);color:#222;font-weight:900}
+.btn-desfazer{background:linear-gradient(180deg,#444,#111);color:var(--gold)}
+
+/* RESULTADOS */
+.results{margin-top:12px;text-align:center}
+.result-card{border-radius:10px;padding:10px;border:1px solid rgba(212,175,55,0.12);background:linear-gradient(180deg, rgba(0,0,0,0.3), rgba(0,0,0,0.45))}
+.result-highlight{font-size:18px;font-weight:900}
+
+/* PLANILHA DE GERENCIAMENTO */
+.manager-panel{display:flex;flex-direction:column;gap:6px;}
+.manager-panel h3{margin:0 0 6px 0;font-size:16px;}
+.manager-panel label{display:flex;justify-content:space-between;font-size:14px;align-items:center;}
+.manager-panel input{width:120px;max-width:45vw;padding:8px;border-radius:6px;border:1px solid rgba(255,255,255,0.2);background:rgba(0,0,0,0.3);color:#fff;text-align:right;font-weight:600;}
+/* Loader simples p/ diagnosticar iframe */
+#bootnote{position:fixed;inset:auto 10px 10px auto;background:rgba(255,255,255,.08);color:#ddd;font-size:12px;padding:6px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.1);z-index:999;}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-overlay">
+  <div id="login-box">
+    <input id="loginUser" type="text" placeholder="Digite o login"/>
+    <button onclick="checkLogin()">Entrar</button>
+  </div>
+</div>
+
+<!-- IFRAME DO JOGO -->
+<iframe id="game-frame" src="https://7games.bet.br/pb/casino/slots/-1?openGames=420012128-real&gameNames=Bac%20Bo" sandbox="allow-same-origin allow-scripts allow-popups allow-forms"></iframe>
+
+<!-- BOTÕES ROBÔ E PLANILHA -->
+<div id="robot-toggle" aria-label="Abrir Robô">
+  <svg id="robot-svg" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="g-metal" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#2b2f36"/><stop offset="1" stop-color="#101215"/></linearGradient>
+      <linearGradient id="g-gold" x1="0" x2="1"><stop offset="0" stop-color="#ffd966"/><stop offset="1" stop-color="#d4af37"/></linearGradient>
+    </defs>
+    <rect x="26" y="36" rx="10" ry="10" width="68" height="54" fill="url(#g-metal)"/>
+    <rect x="38" y="50" rx="6" ry="6" width="44" height="20" fill="url(#g-gold)"/>
+    <text id="robot-text" x="60" y="65" font-size="9" font-weight="800" text-anchor="middle" fill="#071018">JL</text>
+  </svg>
+</div>
+
+<div id="manager-toggle" aria-label="Abrir Planilha">
+  <svg id="manager-svg" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+    <rect x="20" y="30" rx="6" ry="6" width="80" height="60" fill="#222"/>
+    <line x1="28" y1="40" x2="92" y2="40" stroke="#ffd700" stroke-width="2"/>
+    <line x1="28" y1="52" x2="92" y2="52" stroke="#ffd700" stroke-width="2"/>
+    <line x1="28" y1="64" x2="92" y2="64" stroke="#ffd700" stroke-width="2"/>
+  </svg>
+</div>
+
+<!-- PAINEL DO ROBÔ -->
+<div class="calculator-panel" id="calculatorPanel">
+  <!-- 🎲 DADO 3D -->
+  <div id="dice-container">
+    <div class="dice3d">
+      <div class="face front">1</div>
+      <div class="face back">2</div>
+      <div class="face right">3</div>
+      <div class="face left">4</div>
+      <div class="face top">5</div>
+      <div class="face bottom">6</div>
+    </div>
+  </div>
+  <div id="historyContainer" class="history"></div>
+  <div class="grid-buttons">
+    <button class="btn-circle btn-azul" onclick="addColor('azul')">A</button>
+    <button class="btn-circle btn-vermelho" onclick="addColor('vermelho')">V</button>
+    <button class="btn-circle btn-empate" onclick="addColor('empate')">E</button>
+    <button class="btn-circle btn-desfazer" onclick="undoColor()">↩</button>
+  </div>
+  <div class="results" id="results"></div>
+</div>
+
+<!-- PAINEL DA PLANILHA -->
+<div class="manager-panel" id="managerPanel">
+  <h3>📊 Gerenciamento</h3>
+  <label>Banca: <input type="number" id="bankValue" value="1000" inputmode="decimal" onchange="updateManagement()"/></label>
+  <label>Entrada (1%): <input type="text" id="entryValue" readonly/></label>
+  <label>Stop Loss (20%): <input type="text" id="stopLoss" readonly/></label>
+  <label>Stop Win (30%): <input type="text" id="stopWin" readonly/></label>
+</div>
+
+<!-- Loader/diagnóstico simples -->
+<div id="bootnote">Carregando…</div>
 
 <script>
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/Robo-JL/service-worker.js')
-    .then(() => console.log("Service Worker registrado ✅"))
-    .catch(err => console.error("Erro SW:", err));
+/* ====== Mata qualquer Service Worker antigo (causa de tela branca) ====== */
+(function hardResetSW(){
+  try{
+    if('serviceWorker' in navigator){
+      navigator.serviceWorker.getRegistrations().then(regs=>{
+        regs.forEach(r=>r.unregister());
+      });
+    }
+    if('caches' in window){
+      caches.keys().then(keys=>keys.forEach(k=>caches.delete(k)));
+    }
+    console.log('SW e caches limpos.');
+  }catch(e){console.warn('Falha limpando SW/cache:', e);}
+})();
+
+/* LOGIN */
+function checkLogin(){
+  const user=document.getElementById('loginUser').value;
+  if(user==='123'){document.getElementById('login-overlay').style.display='none';}
+  else{alert('Login incorreto');}
 }
+
+/* ROBÔ TOGGLE (inalterado) */
+const robotToggle=document.getElementById('robot-toggle');
+const calcPanel=document.getElementById('calculatorPanel');
+const robotText=document.getElementById('robot-text');
+let panelOpen=false;let robotMode=false;
+robotToggle.addEventListener('click',()=>{
+  panelOpen?(calcPanel.classList.remove('open'),panelOpen=false):(calcPanel.classList.add('open'),panelOpen=true);
+  if(!robotMode){robotText.textContent='🤖';robotMode=true;}
+});
+
+/* PLANILHA TOGGLE (novo, mesmo comportamento do robô) */
+const managerToggle=document.getElementById('manager-toggle');
+const managerPanel=document.getElementById('managerPanel');
+let managerOpen=false;
+managerToggle.addEventListener('click',()=>{
+  managerOpen?(managerPanel.classList.remove('open'),managerOpen=false):(managerPanel.classList.add('open'),managerOpen=true);
+});
+
+/* HISTÓRICO */
+let seq=[];
+const historyContainer=document.getElementById('historyContainer');
+const resultsEl=document.getElementById('results');
+
+function renderHistory(){
+  historyContainer.innerHTML='';
+  seq.forEach((c,idx)=>{
+    const b=document.createElement('div');
+    b.className='mini-ball';
+    if(c==='azul') b.style.background='radial-gradient(circle at 30% 30%,#3bf,#003366)';
+    else if(c==='vermelho') b.style.background='radial-gradient(circle at 30% 30%,#ff4444,#660000)';
+    else if(c==='empate') b.style.background='radial-gradient(circle at 30% 30%,#ffd700,#b8860b)';
+    b.dataset.index=idx;
+    b.onclick=()=>{ seq.splice(idx,1); renderHistory(); calcAll(); };
+    historyContainer.appendChild(b);
+  });
+}
+function addColor(c){ seq.push(c); renderHistory(); calcAll(); }
+function undoColor(){ seq.pop(); renderHistory(); calcAll(); }
+
+/* LÓGICA HÍBRIDA AUTOMÁTICA (inalterada) */
+function countFollowing(seqArr, pattern){
+  const n=pattern.length;
+  const follow={azul:0,vermelho:0,empate:0};
+  if(n===0||seqArr.length<=n) return follow;
+  for(let i=0;i<=seqArr.length-n-1;i++){
+    let ok=true;
+    for(let j=0;j<n;j++){ if(seqArr[i+j]!==pattern[j]){ ok=false; break; } }
+    if(ok){ const next=seqArr[i+n]; if(follow[next]!==undefined) follow[next]++; }
+  }
+  return follow;
+}
+function laplace(k,n){ return (k+1)/(n+3); }
+function pct(x){ return (x*100).toFixed(1)+'%'; }
+
+function calcAll(){
+  const maxPattern=5;
+  if(seq.length<2){ resultsEl.innerHTML='<p style="color:#ddd">Histórico curto.</p>'; return; }
+
+  let probs={azul:0,vermelho:0,empate:0};
+  for(let len=1;len<=Math.min(maxPattern,seq.length-1);len++){
+    const tail=seq.slice(-len);
+    const follow=countFollowing(seq,tail);
+    const total=follow.azul+follow.vermelho+follow.empate;
+    if(total>0){
+      let weight=len;
+      probs.azul += laplace(follow.azul,total)*weight;
+      probs.vermelho += laplace(follow.vermelho,total)*weight;
+      probs.empate += laplace(follow.empate,total)*weight;
+    }
+  }
+  const sum=probs.azul+probs.vermelho+probs.empate;
+  for(let k in probs) probs[k]/=sum;
+
+  let rec='—';let corHex='';
+  if(probs.azul>=probs.vermelho && probs.azul>=probs.empate){rec='Azul';corHex='#00c6ff';}
+  else if(probs.vermelho>=probs.azul && probs.vermelho>=probs.empate){rec='Vermelho';corHex='#ff4444';}
+  else {rec='Empate';corHex='#ffd700';}
+
+  resultsEl.innerHTML=`
+    <div class="result-card">
+      <div class="result-highlight" style="color:${corHex}">🎯 ${rec} ${pct(probs[rec.toLowerCase()])}</div>
+    </div>
+  `;
+}
+
+/* PLANILHA — Cálculo fixo */
+function updateManagement(){
+  const bank=parseFloat(document.getElementById('bankValue').value) || 0;
+  document.getElementById('entryValue').value = (bank*0.01).toFixed(2);
+  document.getElementById('stopLoss').value = (bank*0.2).toFixed(2);
+  document.getElementById('stopWin').value = (bank*0.3).toFixed(2);
+}
+updateManagement();
+
+/* Diagnóstico simples do iframe: some o aviso quando carregar */
+(function(){
+  const note = document.getElementById('bootnote');
+  const iframe = document.getElementById('game-frame');
+  let hid = false;
+  function hideNote(msg){
+    if(hid) return; hid = true;
+    if(msg) note.textContent = msg;
+    setTimeout(()=> note.remove(), 800);
+  }
+  iframe.addEventListener('load', ()=> hideNote('Pronto ✅'));
+  // Se em 8s nada carregou, mostra dica
+  setTimeout(()=>{ if(!hid) note.textContent = 'Dica: se continuar branco, o site do jogo pode bloquear iframe.'; }, 8000);
+})();
 </script>
+</body>
+</html>
