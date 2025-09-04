@@ -1,10 +1,10 @@
 const CACHE_NAME = "robojl-v1";
 const FILES_TO_CACHE = [
-  "./",
-  "./index.html",
-  "./manifest.json",
-  "./icon-192.png",
-  "./icon-512.png"
+  "/Robo-JL/",
+  "/Robo-JL/index.html",
+  "/Robo-JL/manifest.json",
+  "/Robo-JL/icon-192.png",
+  "/Robo-JL/icon-512.png"
 ];
 
 self.addEventListener("install", e => {
