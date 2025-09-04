@@ -1,31 +1,9 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Backbone JL — Robô Bac Bo Automático</title>
-
-<!-- Manifesto e cores -->
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#000000"/>
-
-<style>
-/* === TODO SEU CSS ORIGINAL IGUAL === */
-</style>
-</head>
-<body>
-
-<!-- === TODO SEU HTML ORIGINAL IGUAL (login, iframe, botões, painéis etc.) === -->
+<link rel="manifest" href="/Robo-JL/manifest.json">
 
 <script>
-/* === TODO SEU SCRIPT ORIGINAL IGUAL === */
-
-/* SUPORTE PWA */
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./service-worker.js')
+  navigator.serviceWorker.register('/Robo-JL/service-worker.js')
     .then(() => console.log("Service Worker registrado ✅"))
     .catch(err => console.error("Erro SW:", err));
 }
 </script>
-</body>
-</html>
